@@ -42,23 +42,33 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (navigator.geolocation) {
-      // Obtendo a localização do usuário
-      navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation({ latitude, longitude });
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ latitude, longitude });
 
-        // Calculando a distância entre a biblioteca e o usuário
-        const calculatedDistance = getDistanceFromLatLonInMeters(
-          allowedLocation.latitude,
-          allowedLocation.longitude,
-          latitude,
-          longitude
-        );
-        setDistance(calculatedDistance);
+          const calculatedDistance = getDistanceFromLatLonInMeters(
+            allowedLocation.latitude,
+            allowedLocation.longitude,
+            latitude,
+            longitude
+          );
+          setDistance(calculatedDistance);
+          setIsWithinRange(calculatedDistance <= maxDistance);
+        },
+        (error) => {
+          console.error("Erro ao obter localização:", error);
+          alert("Não foi possível obter sua localização com precisão.");
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
 
-        // Verificando se o usuário está dentro do raio permitido
-        setIsWithinRange(calculatedDistance <= maxDistance);
-      });
+      // Cleanup: para parar de observar quando o componente desmontar
+      return () => navigator.geolocation.clearWatch(watchId);
     } else {
       alert("Geolocalização não é suportada neste navegador.");
     }
